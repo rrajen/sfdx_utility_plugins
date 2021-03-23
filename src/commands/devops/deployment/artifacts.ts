@@ -119,7 +119,7 @@ export default class Artifacts extends SfdxCommand {
 
             var successes = jsonpathQuery(deployResult, '$..componentSuccesses');
             var components = successes[0]
-            if (components) {
+            if (Array.isArray(components)) {
                 //this.ux.log('***** Component Successes *****')
                 components.forEach( (component) => {
                     if (component.componentType) {
@@ -134,7 +134,7 @@ export default class Artifacts extends SfdxCommand {
 
             var failures = jsonpathQuery(deployResult, '$..componentFailures');
             components = failures[0]
-            if (components) {
+            if (Array.isArray(components)) {
                 //this.ux.log('***** Component Failures *****')
                 components.forEach( (component) => {
                     var elog = new ErrorLog(component);
@@ -151,7 +151,9 @@ export default class Artifacts extends SfdxCommand {
 
 
             if (!this.flags.summary) {
-                this.ux.log('\n****** Components ******');
+                if (artifacts.size > 0) {
+                    this.ux.log('\n****** Components ******');
+                }
                 var sortedArtifacts = new Map([...artifacts.entries()].sort());
                 for (var [key, items] of sortedArtifacts) {
                     this.ux.log(key);
