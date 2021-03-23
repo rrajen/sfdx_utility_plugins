@@ -28,7 +28,8 @@ export default class Artifacts extends SfdxCommand {
         deploymentid: flags.string({ required: true, char: 'i', description: 'Deployment Identifier ex: 0Afq000001HKFDO' }),
         summary: flags.boolean({ char: 's', description: 'Display only summary information' }),
         nocolors: flags.boolean({ description: 'Don\'t colorize output'}),
-        noglyphs: flags.boolean({ description: 'Don\'t use glyphs in the output'})
+        noglyphs: flags.boolean({ description: 'Don\'t use glyphs in the output'}),
+        filename: flags.boolean({ description: 'Show fileName of component instead of fullName'})
     };
 
     _printSummary(deployResult) {
@@ -118,36 +119,48 @@ export default class Artifacts extends SfdxCommand {
             this._printSummary(deployResult);
 
             var successes = jsonpathQuery(deployResult, '$..componentSuccesses');
-            var components = successes[0]
-            if (Array.isArray(components)) {
-                //this.ux.log('***** Component Successes *****')
-                components.forEach( (component) => {
-                    if (component.componentType) {
-                        if (!artifacts.has(component.componentType)) {
-                            artifacts.set(component.componentType, []);
-                        }
-                        artifacts.get(component.componentType).push(GREEN_COLOR + SUCCESS_GLYPH + component.fullName + RESET_COLOR);
-                    }
-                });
+            var successComponents = new Array();
+            if (Array.isArray(successes[0])) {
+                successComponents = successes[0];
+            } else {
+                if (successes[0]) {
+                    successComponents.push(successes[0]);
+                }
             }
+            //this.ux.log('***** Component Successes *****')
+            successComponents.forEach( (component) => {
+                if (component.componentType) {
+                    if (!artifacts.has(component.componentType)) {
+                        artifacts.set(component.componentType, []);
+                    }
+                    var compName = this.flags.filename ? component.fileName : component.fullName;
+                    artifacts.get(component.componentType).push(GREEN_COLOR + SUCCESS_GLYPH + compName + RESET_COLOR);
+                }
+            });
 
 
             var failures = jsonpathQuery(deployResult, '$..componentFailures');
-            components = failures[0]
-            if (Array.isArray(components)) {
-                //this.ux.log('***** Component Failures *****')
-                components.forEach( (component) => {
-                    var elog = new ErrorLog(component);
-                    errors.push(elog);
-
-                    if (component.componentType) {
-                        if (!artifacts.has(component.componentType)) {
-                            artifacts.set(component.componentType, []);
-                        }
-                        artifacts.get(component.componentType).push(RED_COLOR + ERROR_GLYPH + component.fullName + RESET_COLOR);
-                    }
-                });
+            var failedComponents = new Array();
+            if (Array.isArray(failures[0])) {
+                failedComponents = failures[0];
+            } else {
+                if (failures[0]) {
+                    failedComponents.push(failures[0]);
+                }
             }
+            //this.ux.log('***** Component Failures *****')
+            failedComponents.forEach( (component) => {
+                var elog = new ErrorLog(component);
+                errors.push(elog);
+
+                if (component.componentType) {
+                    if (!artifacts.has(component.componentType)) {
+                        artifacts.set(component.componentType, []);
+                    }
+                    var compName = this.flags.filename ? component.fileName : component.fullName;
+                    artifacts.get(component.componentType).push(RED_COLOR + ERROR_GLYPH + compName + RESET_COLOR);
+                }
+            });
 
 
             if (!this.flags.summary) {
